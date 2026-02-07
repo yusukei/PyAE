@@ -1,0 +1,76 @@
+// PyAE.rc
+// PiPL Resource - using exact TestPlugin format
+
+16000  PiPL  DISCARDABLE
+BEGIN
+	0x0001,
+	0, 0x0,
+	5, 0x0,
+	"MIB8",
+	"dnik",
+	0, 0x0,
+	4, 0x0,
+	"xgEA",
+
+	"MIB8",
+	"eman",
+	0, 0x0,
+	8, 0x0,
+	"\x04PyAE\0\0\0",
+
+	"MIB8",
+	"gtac",
+	0, 0x0,
+	16, 0x0,
+	"\x0EGeneral Plugin\0",
+
+	"MIB8",
+	"srev",
+	0, 0x0,
+	4, 0x0,
+	0, 3,
+
+	"MIB8",
+	"4668",
+	0, 0x0,
+	16, 0x0,
+	"EntryPointFunc\0\0",
+
+
+END
+
+
+#include <windows.h>
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 1,0,0,0
+PRODUCTVERSION 1,0,0,0
+FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+FILEFLAGS 0x1L
+#else
+FILEFLAGS 0x0L
+#endif
+FILEOS 0x40004L
+FILETYPE 0x2L
+FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "VTech Studio"
+            VALUE "FileDescription", "PyAE - Python for After Effects"
+            VALUE "FileVersion", "1.0.0.0"
+            VALUE "InternalName", "PyAE"
+            VALUE "LegalCopyright", "Copyright (C) 2024 VTech Studio"
+            VALUE "OriginalFilename", "PyAE.aex"
+            VALUE "ProductName", "PyAE"
+            VALUE "ProductVersion", "1.0.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

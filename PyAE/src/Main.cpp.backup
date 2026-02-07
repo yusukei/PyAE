@@ -1,0 +1,292 @@
+// Main.cpp
+// PyAE - Python for After Effects
+// プラグインエントリーポイント
+
+// C++標準ライブラリを先にインクルード（AE SDKのextern "C"問題を回避）
+#include <filesystem>
+#include <string>
+#include <memory>
+
+// Windows SDK (winsock2.hの前にWIN32_LEAN_AND_MEANを定義してwinsock1を除外)
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <winsock2.h>
+#include <Windows.h>
+#endif
+
+// After Effects SDK
+#include "AE_GeneralPlug.h"
+#include "AE_Macros.h"
+#include "AEGP_SuiteHandler.h"
+
+// PyAEヘッダー
+#include "PluginState.h"
+#include "PythonHost.h"
+#include "IdleHandler.h"
+#include "MenuHandler.h"
+#include "Logger.h"
+#include "ErrorHandling.h"
+
+#ifdef PYAE_ENABLE_REPL
+#include "REPLServer.h"
+#endif
+
+// プラグイン情報
+static constexpr const char* PLUGIN_NAME = "PyAE";
+static constexpr const char* PLUGIN_MATCH_NAME = "com.vtechstudio.pyae";
+static constexpr A_long PLUGIN_MAJOR_VERSION = 1;
+static constexpr A_long PLUGIN_MINOR_VERSION = 0;
+
+// グローバルプラグインID
+static AEGP_PluginID g_pluginId = 0;
+
+// 前方宣言
+#ifdef _WIN32
+#define PLUGIN_EXPORT __declspec(dllexport)
+#else
+#define PLUGIN_EXPORT
+#endif
+
+extern "C" PLUGIN_EXPORT A_Err EntryPointFunc(SPBasicSuite*, A_long, A_long, AEGP_PluginID, AEGP_GlobalRefcon*);
+
+// プラグインディレクトリ検出
+static std::filesystem::path DetectPluginDirectory(SPBasicSuite* basicSuite, AEGP_PluginID pluginId) {
+    // Windows: GetModuleFileName を使用
+#ifdef _WIN32
+    wchar_t modulePath[MAX_PATH];
+    HMODULE hModule = nullptr;
+
+    // 自分自身のモジュールハンドルを取得
+    if (GetModuleHandleExW(
+        GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+        reinterpret_cast<LPCWSTR>(&EntryPointFunc),
+        &hModule
+    ) == 0) {
+        return std::filesystem::current_path();
+    }
+
+    if (hModule && GetModuleFileNameW(hModule, modulePath, MAX_PATH) > 0) {
+        std::filesystem::path path(modulePath);
+        return path.parent_path();
+    }
+#endif
+
+    // フォールバック: カレントディレクトリ
+    return std::filesystem::current_path();
+}
+
+// プラグイン初期化
+static A_Err PluginInit(
+    SPBasicSuite* basicSuite,
+    AEGP_PluginID pluginId,
+    AEGP_GlobalRefcon* globalRefconP)
+{
+    A_Err err = A_Err_NONE;
+
+    g_pluginId = pluginId;
+
+    try {
+        // プラグインディレクトリ検出
+        PyAE::DebugOutput("Detecting plugin directory...");
+        std::filesystem::path pluginDir = DetectPluginDirectory(basicSuite, pluginId);
+        PyAE::DebugOutput("Plugin directory: " + pluginDir.string());
+
+        // ロガー初期化
+        PyAE::DebugOutput("Initializing Logger...");
+        if (!PyAE::Logger::Instance().Initialize(pluginDir)) {
+            PyAE::DebugOutput("ERROR: Logger initialization failed!");
+            return A_Err_GENERIC;
+        }
+        PyAE::DebugOutput("Logger initialized OK");
+
+        PYAE_LOG_INFO("Main", "PyAE Plugin initializing...");
+        PYAE_LOG_INFO("Main", "Plugin directory: " + pluginDir.string());
+
+        // プラグイン状態初期化
+        PyAE::DebugOutput("Initializing PluginState...");
+        if (!PyAE::PluginState::Instance().Initialize(basicSuite, pluginId)) {
+            PyAE::DebugOutput("ERROR: PluginState initialization failed!");
+            PYAE_LOG_ERROR("Main", "Failed to initialize PluginState");
+            return A_Err_GENERIC;
+        }
+        PyAE::DebugOutput("PluginState initialized OK");
+
+        // Python初期化
+        PyAE::DebugOutput("Initializing PythonHost...");
+        PyAE::PythonConfig pythonConfig;
+        pythonConfig.pythonHome = pluginDir / "python";
+        pythonConfig.scriptsDir = pluginDir / "scripts";
+        PyAE::DebugOutput("Python home: " + pythonConfig.pythonHome.string());
+        PyAE::DebugOutput("Scripts dir: " + pythonConfig.scriptsDir.string());
+
+#ifdef PYAE_ENABLE_REPL
+        pythonConfig.enableREPL = true;
+        pythonConfig.replPort = 9999;
+#endif
+
+        if (!PyAE::PythonHost::Instance().Initialize(pythonConfig)) {
+            PyAE::DebugOutput("ERROR: PythonHost initialization failed!");
+            PYAE_LOG_ERROR("Main", "Failed to initialize PythonHost");
+            return A_Err_GENERIC;
+        }
+        PyAE::DebugOutput("PythonHost initialized OK");
+
+        // アイドルハンドラ初期化
+        PyAE::DebugOutput("Initializing IdleHandler...");
+        if (!PyAE::IdleHandler::Instance().Initialize()) {
+            PyAE::DebugOutput("ERROR: IdleHandler initialization failed!");
+            PYAE_LOG_ERROR("Main", "Failed to initialize IdleHandler");
+            return A_Err_GENERIC;
+        }
+        PyAE::DebugOutput("IdleHandler initialized OK");
+
+        // メニューハンドラ初期化
+        PyAE::DebugOutput("Initializing MenuHandler...");
+        if (!PyAE::MenuHandler::Instance().Initialize()) {
+            PyAE::DebugOutput("ERROR: MenuHandler initialization failed!");
+            PYAE_LOG_ERROR("Main", "Failed to initialize MenuHandler");
+            return A_Err_GENERIC;
+        }
+        PyAE::DebugOutput("MenuHandler initialized OK");
+
+        // スイートハンドラ取得
+        PyAE::DebugOutput("Getting AEGP_SuiteHandler...");
+        AEGP_SuiteHandler suites(basicSuite);
+
+        // アイドルフック登録
+        PyAE::DebugOutput("Registering IdleHook...");
+        err = suites.RegisterSuite5()->AEGP_RegisterIdleHook(
+            pluginId,
+            PyAE::PyAE_IdleHook,
+            nullptr
+        );
+        PyAE::DebugOutput("RegisterIdleHook result: " + std::to_string(err));
+        PYAE_CHECK_ERR(err, "RegisterIdleHook");
+
+        // コマンドフック登録（すべてのコマンドをフック）
+        PyAE::DebugOutput("Registering CommandHook...");
+        err = suites.RegisterSuite5()->AEGP_RegisterCommandHook(
+            pluginId,
+            AEGP_HP_BeforeAE,
+            AEGP_Command_ALL,
+            PyAE::PyAE_CommandHook,
+            nullptr
+        );
+        PyAE::DebugOutput("RegisterCommandHook result: " + std::to_string(err));
+        PYAE_CHECK_ERR(err, "RegisterCommandHook");
+
+        // メニュー更新フック登録
+        PyAE::DebugOutput("Registering UpdateMenuHook...");
+        err = suites.RegisterSuite5()->AEGP_RegisterUpdateMenuHook(
+            pluginId,
+            PyAE::PyAE_UpdateMenuHook,
+            nullptr
+        );
+        PyAE::DebugOutput("RegisterUpdateMenuHook result: " + std::to_string(err));
+        PYAE_CHECK_ERR(err, "RegisterUpdateMenuHook");
+
+        // メニュー作成
+        PyAE::DebugOutput("Creating PyAE menu...");
+        if (!PyAE::MenuHandler::Instance().CreatePyAEMenu()) {
+            PyAE::DebugOutput("WARNING: Failed to create PyAE menu");
+            PYAE_LOG_WARNING("Main", "Failed to create PyAE menu");
+        } else {
+            PyAE::DebugOutput("PyAE menu created successfully");
+        }
+
+#ifdef PYAE_ENABLE_REPL
+        // REPLサーバー初期化・開始
+        PyAE::REPLConfig replConfig;
+        replConfig.port = pythonConfig.replPort;
+        replConfig.authToken = PyAE::REPLServer::GenerateAuthToken();
+
+        if (PyAE::REPLServer::Instance().Initialize(replConfig)) {
+            PyAE::REPLServer::Instance().Start();
+            PYAE_LOG_INFO("Main", "REPL server started on port " + std::to_string(replConfig.port));
+        }
+#endif
+
+        PYAE_LOG_INFO("Main", "PyAE Plugin initialized successfully");
+
+    } catch (const std::exception& e) {
+        PYAE_LOG_FATAL("Main", std::string("Exception during init: ") + e.what());
+        return A_Err_GENERIC;
+    }
+
+    return err;
+}
+
+// プラグイン終了
+static A_Err PluginDeath(
+    SPBasicSuite* basicSuite,
+    AEGP_PluginID pluginId,
+    AEGP_GlobalRefcon globalRefcon)
+{
+    PYAE_LOG_INFO("Main", "PyAE Plugin shutting down...");
+
+    PyAE::PluginState::Instance().SetShuttingDown(true);
+
+#ifdef PYAE_ENABLE_REPL
+    PyAE::REPLServer::Instance().Shutdown();
+#endif
+
+    PyAE::MenuHandler::Instance().Shutdown();
+    PyAE::IdleHandler::Instance().Shutdown();
+    PyAE::PythonHost::Instance().Shutdown();
+    PyAE::PluginState::Instance().Shutdown();
+
+    PYAE_LOG_INFO("Main", "PyAE Plugin shutdown complete");
+
+    PyAE::Logger::Instance().Shutdown();
+
+    return A_Err_NONE;
+}
+
+// アイドルメッセージ
+static A_Err PluginIdle(
+    SPBasicSuite* basicSuite,
+    AEGP_PluginID pluginId,
+    AEGP_GlobalRefcon globalRefcon,
+    A_long* maxSleepP)
+{
+    // IdleHandlerに委譲
+    return PyAE::IdleHandler::Instance().OnIdle(globalRefcon, nullptr, maxSleepP);
+}
+
+// ===============================================
+// エントリーポイント
+// ===============================================
+
+// AEGPプラグインエントリーポイント
+// PiPLリソースで "EntryPointFunc" として指定される
+extern "C" PLUGIN_EXPORT A_Err EntryPointFunc(
+    SPBasicSuite* pica_basicP,
+    A_long major_versionL,
+    A_long minor_versionL,
+    AEGP_PluginID aegp_plugin_id,
+    AEGP_GlobalRefcon* global_refconP)
+{
+    // 最初にDebugViewに出力（ロガー初期化前）
+    PyAE::DebugOutput("=== PyAE EntryPointFunc called ===");
+    PyAE::DebugOutput("AE SDK version: " + std::to_string(major_versionL) + "." + std::to_string(minor_versionL));
+    PyAE::DebugOutput("Plugin ID: " + std::to_string(aegp_plugin_id));
+
+    A_Err err = A_Err_NONE;
+    g_pluginId = aegp_plugin_id;
+
+    try {
+        PyAE::DebugOutput("Calling PluginInit...");
+        err = PluginInit(pica_basicP, aegp_plugin_id, global_refconP);
+        PyAE::DebugOutput("PluginInit returned: " + std::to_string(err));
+    } catch (const std::exception& e) {
+        PyAE::DebugOutput("Exception in PluginInit: " + std::string(e.what()));
+        // 例外をキャッチしてログ出力
+        if (PyAE::Logger::Instance().GetLogPath().empty() == false) {
+            PYAE_LOG_FATAL("Main", std::string("Unhandled exception: ") + e.what());
+        }
+        err = A_Err_GENERIC;
+    }
+
+    PyAE::DebugOutput("=== PyAE EntryPointFunc done ===");
+    return err;
+}

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <!-- PyAE MSI Installer -->
+  <Package
+    Name="PyAE"
+    Version="1.0.0"
+    Manufacturer="VTechStudio"
+    UpgradeCode="E7A3B1C4-5D6F-4A8E-9B0C-1D2E3F4A5B6C"
+    Scope="perMachine"
+    Language="1033"
+    InstallerVersion="500">
+
+    <SummaryInformation
+      Description="PyAE - Python integration plugin for Adobe After Effects" />
+
+    <!-- Upgrade: auto-uninstall previous versions -->
+    <MajorUpgrade
+      DowngradeErrorMessage="A newer version of PyAE is already installed." />
+
+    <!-- Embed CAB into MSI -->
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- Directory structure -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="AdobeDir" Name="Adobe">
+        <Directory Id="CommonDir" Name="Common">
+          <Directory Id="PluginsDir" Name="Plug-ins">
+            <Directory Id="SevenZeroDir" Name="7.0">
+              <Directory Id="MediaCoreDir" Name="MediaCore">
+                <Directory Id="INSTALLFOLDER" Name="PyAE">
+                  <Directory Id="LogsDir" Name="logs" />
+                </Directory>
+              </Directory>
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Plugin files (manually listed) -->
+    <ComponentGroup Id="PluginFiles" Directory="INSTALLFOLDER">
+
+      <Component Id="PyAE_aex" Bitness="always64">
+        <File Source="staging\PyAE.aex" />
+      </Component>
+
+      <Component Id="PyAECore_2022" Bitness="always64">
+        <File Source="staging\PyAECore_2022.dll" />
+      </Component>
+
+      <Component Id="PyAECore_2023" Bitness="always64">
+        <File Source="staging\PyAECore_2023.dll" />
+      </Component>
+
+      <Component Id="PyAECore_25_2" Bitness="always64">
+        <File Source="staging\PyAECore_25_2.dll" />
+      </Component>
+
+      <Component Id="PyAECore_25_6" Bitness="always64">
+        <File Source="staging\PyAECore_25_6.dll" />
+      </Component>
+
+      <Component Id="PyAEBridge" Bitness="always64">
+        <File Source="staging\PyAEBridge.dll" />
+      </Component>
+
+    </ComponentGroup>
+
+    <!-- Python runtime (auto-harvested from staging directory) -->
+    <ComponentGroup Id="PythonRuntime" Directory="INSTALLFOLDER">
+      <Files Include="staging\Python310\**" />
+    </ComponentGroup>
+
+    <!-- Empty logs directory -->
+    <ComponentGroup Id="LogsFolder" Directory="LogsDir">
+      <Component Id="LogsDir_Create" Guid="A1B2C3D4-E5F6-7890-ABCD-EF1234567890">
+        <CreateFolder />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Single feature -->
+    <Feature Id="Complete" Title="PyAE" Level="1">
+      <ComponentGroupRef Id="PluginFiles" />
+      <ComponentGroupRef Id="PythonRuntime" />
+      <ComponentGroupRef Id="LogsFolder" />
+    </Feature>
+
+  </Package>
+
+</Wix>

@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd /c \"\"\"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Community\\\\VC\\\\Auxiliary\\\\Build\\\\vcvarsall.bat\"\" x64 && msbuild \"\"d:\\\\works\\\\VTechStudio\\\\AfterFX\\\\AfterEffectsSDK 2023\\\\Examples\\\\BuildAll.sln\"\" /p:Configuration=Release /p:Platform=x64 /m\")",
+      "Bash(cmake --build:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nDynamic Streamプロパティ探索機能を実装\n\n- DynamicStreamSuite4を取得しプロパティの階層探索をサポート\n- Property: is_group, num_properties, match_name, depth プロパティ追加\n- Property: property\\(\\), __getitem__, __iter__, properties メソッド追加\n- Layer: properties プロパティ（ルートプロパティグループ）追加\n- 型スタブ更新とテスト追加\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(python3:*)",
+      "Bash(wc:*)",
+      "Bash(Get-Content \"d:\\\\works\\\\VTechStudio\\\\AfterFX\\\\PyAE\\\\build_output.txt\" -Tail 50)",
+      "Bash(cmd /c \"set PYAE_AUTO_TEST=1 &amp; set PYAE_TEST_MODULE=test_runner &amp; set PYAE_TEST_FUNCTION=run_all_tests &amp; set PYAE_TEST_OUTPUT=C:\\\\temp\\\\test_result.json &amp; set PYAE_TEST_EXIT=1 &amp; set PYAE_TEST_DELAY=2 &amp; start \"\"\"\" \"\"C:\\\\Program Files\\\\Adobe\\\\Adobe After Effects 2025\\\\Support Files\\\\AfterFX.exe\"\"\")",
+      "Bash(cmd /c type \"C:\\\\Program Files\\\\Adobe\\\\Common\\\\Plug-ins\\\\7.0\\\\MediaCore\\\\PyAE\\\\scripts\\\\test_results.json\")",
+      "Bash(run_tests.bat)",
+      "Bash(./run_tests.bat)",
+      "Bash(./build.bat --help)",
+      "Bash(./build_docs.bat)",
+      "Bash(./run_tests.bat --results)",
+      "Bash(find:*)",
+      "Bash(./build.bat --clean)",
+      "Bash(./build.bat)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(./setup_all.bat --skip-build)",
+      "Bash(for dir in /d/works/VTechStudio/AfterFX/PyAE/tests/*/)",
+      "Read(//d/works/VTechStudio/AfterFX/**)",
+      "Bash(./run_tests.bat --deploy)",
+      "Bash(./build.bat --config Release)",
+      "Bash(./setup_all.bat --debug --skip-build)",
+      "Bash(./build.bat:*)",
+      "Bash(for file in \"d:/works/VTechStudio/AfterFX/PyAE/src/PyBindings/SDK\"/*.cpp)",
+      "Bash(done)",
+      "Bash(./setup_all.bat)",
+      "Bash(git diff:*)"
+    ]
+  }
+}

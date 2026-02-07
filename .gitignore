@@ -1,0 +1,134 @@
+# ===========================================
+# PyAE Project .gitignore
+# ===========================================
+
+# -------------------------------------------
+# Build Outputs
+# -------------------------------------------
+# CMake build directories
+PyAE/build/
+build/
+out/
+
+# Compiled binaries
+*.aex
+*.dll
+*.pdb
+*.obj
+*.lib
+*.exp
+*.ilk
+*.exe
+
+*.msi
+*.wixpdb
+
+# -------------------------------------------
+# External Dependencies (large/downloadable)
+# -------------------------------------------
+# Embedded Python distribution
+Python310/
+Python312/
+
+# Adobe After Effects SDK (not redistributable)
+SDKs/
+
+# -------------------------------------------
+# IDE and Editor Files
+# -------------------------------------------
+# Visual Studio
+.vs/
+*.vcxproj.user
+*.suo
+*.sln.docstates
+*.ncb
+*.opensdf
+*.sdf
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+ipch/
+
+# VSCode (keep shared settings in .vscode/)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/c_cpp_properties.json
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+
+# -------------------------------------------
+# CMake
+# -------------------------------------------
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+CMakeSettings.json
+compile_commands.json
+_deps/
+
+# CPack
+_CPack_Packages/
+*.tar.gz
+*.zip
+
+# -------------------------------------------
+# Runtime and Logs
+# -------------------------------------------
+logs/
+*.log
+
+# -------------------------------------------
+# Temporary and System Files
+# -------------------------------------------
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+nul
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# -------------------------------------------
+# Claude Code (optional - uncomment to track)
+# -------------------------------------------
+# .claude/
+
+# -------------------------------------------
+# Python (in scripts/)
+# -------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+*.egg
+.pytest_cache/
+.mypy_cache/
+
+# -------------------------------------------
+# Sphinx Documentation
+# -------------------------------------------
+# Sphinx build outputs
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# Sphinx auto-generated files
+docs/api/generated/
+
+# -------------------------------------------
+# Keep these (do NOT ignore)
+# -------------------------------------------
+# docs/          <- Documentation should be tracked
+# PyAE/          <- Source code
+# scripts/       <- Example scripts
